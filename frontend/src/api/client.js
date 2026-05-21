@@ -1,0 +1,19 @@
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: '/api',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+api.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    console.error('API Error:', error.response?.data || error.message);
+    throw error.response?.data || { error: error.message };
+  }
+);
+
+export default api;
