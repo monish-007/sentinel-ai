@@ -3,13 +3,46 @@ const router = express.Router();
 
 const memoryService = require('../services/memoryService');
 
+const Interaction = require('../models/Interaction');
+
 /**
- * GET /api/memory/history
- * Return the in-memory operation log.
+ * GET /api/memory
+ * Return persistent memories extracted from past interactions.
  */
-router.get('/history', (req, res) => {
-  const log = memoryService.getOperationLog();
-  res.json({ operations: log, total: log.length });
+router.get('/', async (req, res) => {
+  try {
+    const interactions = await Interaction.find().sort({ createdAt: -1 }).limit(100);
+    
+    const memories = interactions.map(i => {
+      let text = `[Query Context] ${i.query}`;
+      
+      // Attempt to parse structured decisions out of the raw response
+      if (i.response) {
+         try {
+            let jsonStr = i.response.trim();
+            if (jsonStr.startsWith('```')) {
+              jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+            }
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.decisionSummary) {
+               text = `[Decision Context] Risk: ${parsed.riskLevel?.toUpperCase() || 'UNKNOWN'} | ${parsed.decisionSummary}`;
+            }
+         } catch(e) {
+            text = `[Raw Context] ${i.response.slice(0, 200)}...`;
+         }
+      }
+
+      return {
+        text,
+        createdAt: i.createdAt
+      };
+    });
+
+    res.json({ memories, total: memories.length });
+  } catch (err) {
+    console.error('[Memory] Fetch failed:', err);
+    res.status(500).json({ error: 'Failed to fetch memories' });
+  }
 });
 
 /**
