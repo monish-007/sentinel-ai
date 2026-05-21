@@ -331,31 +331,51 @@ export default function Chat() {
         </div>
 
         {/* MESSAGES */}
-        <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="flex-1 overflow-y-auto px-4 py-6 scrollbar-thin">
           <div className="max-w-4xl mx-auto space-y-6">
-            {messages.map((msg, idx) => (
-              <div key={idx}>
-                {msg.isUser ? (
-                  <ChatMessage
-                    message={msg.text}
-                    isUser={true}
-                    metadata={msg.metadata}
-                  />
-                ) : msg.decision ? (
-                  <DecisionCard decision={msg.decision} />
-                ) : (
-                  <ChatMessage
-                    message={msg.text}
-                    isUser={false}
-                    metadata={msg.metadata}
-                  />
-                )}
+            {messages.length === 0 && !isTyping ? (
+              <div className="flex flex-col items-center justify-center h-full text-center mt-12 animate-fade-up">
+                <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 border border-blue-100 shadow-sm">
+                  <Target className="w-8 h-8 text-blue-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">
+                  How can I assist your enterprise today?
+                </h2>
+                <p className="text-slate-500 font-medium max-w-lg mb-8">
+                  I specialize in audit, compliance, and governance decision intelligence.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
+                  {QUICK_ACTIONS.map((action) => (
+                    <button
+                      key={action.label}
+                      onClick={() => setInput(action.query)}
+                      className="flex items-center gap-3 px-4 py-3.5 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all text-left group shadow-sm bg-white"
+                    >
+                      <span className="text-xl flex-shrink-0">{action.icon}</span>
+                      <span className="text-sm text-slate-600 group-hover:text-blue-700 font-semibold line-clamp-2">
+                        {action.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            ))}
-
-            {isTyping && <ChatMessage isTyping />}
-
-            <div ref={messagesEndRef} />
+            ) : (
+              <>
+                {messages.map((msg, idx) => (
+                  <div key={idx} className="w-full">
+                    {msg.isUser ? (
+                      <ChatMessage message={msg.text} isUser={true} metadata={msg.metadata} />
+                    ) : msg.decision ? (
+                      <DecisionCard decision={msg.decision} />
+                    ) : (
+                      <ChatMessage message={msg.text} isUser={false} metadata={msg.metadata} />
+                    )}
+                  </div>
+                ))}
+                {isTyping && <ChatMessage isTyping />}
+                <div ref={messagesEndRef} className="h-4" />
+              </>
+            )}
           </div>
         </div>
 
