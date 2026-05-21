@@ -8,7 +8,12 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+// BEST PRACTICE: Allow cross-origin requests from Vercel frontend to Render backend
+app.use(cors({
+  origin: '*', // In production, you can restrict this to your exact Vercel domain e.g., 'https://your-app.vercel.app'
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // MongoDB Connection
