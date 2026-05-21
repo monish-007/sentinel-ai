@@ -1,150 +1,75 @@
 import { useState, useEffect } from 'react';
 import {
-  AlertTriangle,
   ShieldAlert,
+  AlertTriangle,
   CheckCircle2,
+  Clock,
   Filter,
+  Search,
+  ChevronDown,
+  Shield,
   Loader2,
   XCircle,
-  AlertOctagon,
-  Info,
 } from 'lucide-react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
 import api from '../api/client.js';
-import StatCard from '../components/StatCard.jsx';
-import StatusBadge from '../components/StatusBadge.jsx';
-
-const ChartTooltip = ({ active, payload, label }) => {
-  if (active && payload?.length) {
-    return (
-      <div className="glass rounded-lg px-3 py-2 text-xs shadow-xl">
-        <p className="text-slate-400 mb-1">{label}</p>
-        {payload.map((p, i) => (
-          <p key={i} style={{ color: p.color }} className="font-medium">
-            {p.name}: {p.value}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
-
-const typeIcons = {
-  hallucination: AlertOctagon,
-  safety_violation: ShieldAlert,
-  high_cost: AlertTriangle,
-  latency_spike: AlertTriangle,
-  error: XCircle,
-  low_confidence: AlertTriangle,
-  governance_flag: ShieldAlert,
-  routing_failure: XCircle,
-  model_mismatch: AlertOctagon,
-  compliance_violation: ShieldAlert,
-  escalation_required: AlertTriangle,
-  default: Info,
-};
 
 export default function Incidents() {
   const [incidents, setIncidents] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    type: '',
-    severity: '',
-    resolved: '',
-  });
+  const [filter, setFilter] = useState('all');
+  const [resolvingId, setResolvingId] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  async function fetchData() {
+  const fetchIncidents = async () => {
     try {
-      const [incidentData, statsData] = await Promise.allSettled([
-        api.get('/incidents'),
+      const [incRes, statRes] = await Promise.all([
+        api.get('/incidents?limit=50'),
         api.get('/incidents/stats'),
       ]);
-
-      if (incidentData.status === 'fulfilled') {
-        const d = incidentData.value;
-        setIncidents(Array.isArray(d) ? d : d?.incidents || d?.data || []);
-      }
-      if (statsData.status === 'fulfilled') {
-        setStats(statsData.value);
-      }
+      setIncidents(incRes.incidents || []);
+      setStats(statRes);
     } catch (err) {
-      console.error('Incidents fetch error:', err);
+      console.error('Failed to fetch incidents:', err);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  const handleResolve = async (id) => {
+  useEffect(() => {
+    fetchIncidents();
+    const interval = setInterval(fetchIncidents, 10000); // Poll every 10s
+    return () => clearInterval(interval);
+  }, []);
+
+  const resolveIncident = async (id) => {
+    setResolvingId(id);
     try {
-      await api.patch(`/incidents/${id}/resolve`);
-      setIncidents((prev) =>
-        prev.map((inc) =>
-          inc.id === id ? { ...inc, resolved: true } : inc
-        )
-      );
+      await api.post(`/incidents/${id}/resolve`, {
+        resolutionNotes: 'Resolved by Governance Team via dashboard.',
+      });
+      fetchIncidents();
     } catch (err) {
-      console.error('Resolve error:', err);
+      console.error('Failed to resolve:', err);
+    } finally {
+      setResolvingId(null);
     }
   };
 
-  const filteredIncidents = incidents.filter((inc) => {
-    if (filters.type && inc.type !== filters.type) return false;
-    if (filters.severity && inc.severity !== filters.severity) return false;
-    if (filters.resolved === 'true' && !inc.resolved) return false;
-    if (filters.resolved === 'false' && inc.resolved) return false;
+  const filtered = incidents.filter((i) => {
+    if (filter === 'active') return !i.resolved;
+    if (filter === 'resolved') return i.resolved;
+    if (filter === 'critical') return i.severity === 'critical';
     return true;
   });
 
-  const uniqueTypes = [...new Set(incidents.map((i) => i.type).filter(Boolean))];
-  const uniqueSeverities = [
-    ...new Set(incidents.map((i) => i.severity).filter(Boolean)),
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+      </div>
+    );
+  }
 
-  const severityVariant = (severity) => {
-    switch (severity?.toLowerCase()) {
-      case 'critical':
-        return 'danger';
-      case 'high':
-        return 'warning';
-      case 'medium':
-        return 'info';
-      default:
-        return 'neutral';
-    }
-  };
-
-  // Generate chart data from incidents
-  const chartData = (() => {
-    if (stats?.timeline) return stats.timeline;
-    // Group incidents by date
-    const byDate = {};
-    incidents.forEach((inc) => {
-      const date = inc.timestamp
-        ? new Date(inc.timestamp).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          })
-        : 'Unknown';
-      byDate[date] = (byDate[date] || 0) + 1;
-    });
-    return Object.entries(byDate).map(([date, count]) => ({ date, count }));
-  })();
-
-  const totalIncidents = stats?.total || incidents.length;
   const criticalCount =
     stats?.critical ||
     incidents.filter((i) => i.severity?.toLowerCase() === 'critical').length;
@@ -152,188 +77,179 @@ export default function Incidents() {
     stats?.unresolved || incidents.filter((i) => !i.resolved).length;
 
   return (
-    <div className="space-y-8 animate-fade-up">
+    <div className="max-w-6xl mx-auto space-y-6 animate-fade-up pb-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-          <ShieldAlert className="w-8 h-8 text-rose-400" />
-          Operational Governance Center
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+          <ShieldAlert className="w-7 h-7 text-rose-600" />
+          Governance
         </h1>
-        <p className="text-slate-400 mt-1">
-          Monitor policy violations, security threats, and model alignment incidents
+        <p className="text-slate-500 text-sm mt-1 font-medium">
+          Policy violations, security threats & model alignment incidents
         </p>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          title="Total Events"
-          value={totalIncidents.toString()}
-          icon={AlertTriangle}
-          color="amber"
-        />
-        <StatCard
-          title="Critical"
-          value={criticalCount.toString()}
-          icon={AlertOctagon}
-          color="rose"
-        />
-        <StatCard
-          title="Unresolved"
-          value={unresolvedCount.toString()}
-          icon={XCircle}
-          color="purple"
-        />
-      </div>
-
-      {/* Filters */}
-      <div className="glass rounded-2xl p-4 flex flex-wrap items-center gap-3">
-        <Filter className="w-4 h-4 text-slate-400" />
-        <select
-          value={filters.type}
-          onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value }))}
-          className="bg-white/[0.05] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-slate-300 outline-none focus:border-cyan-500/50"
-        >
-          <option value="">All Types</option>
-          {uniqueTypes.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filters.severity}
-          onChange={(e) =>
-            setFilters((f) => ({ ...f, severity: e.target.value }))
-          }
-          className="bg-white/[0.05] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-slate-300 outline-none focus:border-cyan-500/50"
-        >
-          <option value="">All Severities</option>
-          {uniqueSeverities.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filters.resolved}
-          onChange={(e) =>
-            setFilters((f) => ({ ...f, resolved: e.target.value }))
-          }
-          className="bg-white/[0.05] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-slate-300 outline-none focus:border-cyan-500/50"
-        >
-          <option value="">All Status</option>
-          <option value="false">Unresolved</option>
-          <option value="true">Resolved</option>
-        </select>
-      </div>
-
-      {/* Incident List */}
-      {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      {/* Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Incidents</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {stats?.total || incidents.length}
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500">
+            <Shield className="w-6 h-6" />
+          </div>
         </div>
-      ) : filteredIncidents.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {filteredIncidents.map((incident, idx) => {
-            const TypeIcon =
-              typeIcons[incident.type] || typeIcons.default;
-            return (
-              <div
-                key={incident.id || idx}
-                className={`glass rounded-xl p-4 transition-all duration-200 hover:bg-white/[0.05] ${
-                  incident.resolved ? 'opacity-60' : ''
+
+        <div className="bg-white border border-rose-200 shadow-sm rounded-2xl p-5 flex items-center justify-between relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-full blur-3xl -mr-10 -mt-10" />
+          <div className="relative z-10">
+            <p className="text-[11px] font-bold text-rose-600 uppercase tracking-wider mb-1">Critical Alerts</p>
+            <p className="text-2xl font-bold text-rose-700">{criticalCount}</p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 relative z-10">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-white border border-amber-200 shadow-sm rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-1">Unresolved</p>
+            <p className="text-2xl font-bold text-amber-700">{unresolvedCount}</p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+            <XCircle className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+        {/* Controls */}
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between gap-4 bg-slate-50">
+          <div className="flex gap-2">
+            {['all', 'active', 'critical', 'resolved'].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                  filter === f
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-white text-slate-500 hover:text-slate-800 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <TypeIcon className="w-4 h-4 text-slate-400" />
-                    <StatusBadge
-                      label={incident.severity || 'Unknown'}
-                      variant={severityVariant(incident.severity)}
-                    />
-                  </div>
-                  <span className="text-[10px] text-slate-500">
-                    {incident.timestamp
-                      ? new Date(incident.timestamp).toLocaleString()
-                      : '—'}
-                  </span>
-                </div>
-                <p className="text-sm text-slate-200 font-medium mb-1">
-                  {incident.type
-                    ? incident.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-                    : 'Incident'}
-                </p>
-                <p className="text-xs text-slate-400 mb-3 line-clamp-2">
-                  {incident.description || 'No description available'}
-                </p>
-                <div className="flex items-center justify-between">
-                  {incident.model && (
-                    <span className="text-[10px] text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded">
-                      {incident.model}
-                    </span>
-                  )}
-                  {!incident.resolved ? (
-                    <button
-                      onClick={() => handleResolve(incident.id)}
-                      className="flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-colors"
-                    >
-                      <CheckCircle2 className="w-3 h-3" />
-                      Resolve
-                    </button>
+                {f}
+              </button>
+            ))}
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search incidents..."
+              className="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+            />
+          </div>
+        </div>
+
+        {/* List */}
+        <div className="divide-y divide-slate-100">
+          {filtered.length === 0 ? (
+            <div className="p-12 text-center text-slate-500">
+              <Shield className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+              <p className="font-medium text-slate-600">No incidents found</p>
+              <p className="text-sm">Everything is running smoothly.</p>
+            </div>
+          ) : (
+            filtered.map((inc) => (
+              <div
+                key={inc._id}
+                className="p-5 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row gap-4 items-start sm:items-center"
+              >
+                {/* Status/Severity Icon */}
+                <div className="flex-shrink-0">
+                  {inc.resolved ? (
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    </div>
+                  ) : inc.severity === 'critical' || inc.severity === 'high' ? (
+                    <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center relative">
+                      <span className="absolute inline-flex w-full h-full rounded-full bg-rose-400 opacity-20 animate-ping" />
+                      <AlertTriangle className="w-5 h-5 text-rose-600 relative" />
+                    </div>
                   ) : (
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" />
+                    <div className="w-10 h-10 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center">
+                      <AlertTriangle className="w-5 h-5 text-amber-600" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                        inc.severity === 'critical'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : inc.severity === 'high'
+                          ? 'bg-orange-50 text-orange-700 border-orange-200'
+                          : inc.severity === 'medium'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      }`}
+                    >
+                      {inc.severity}
+                    </span>
+                    <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                      {inc.type.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800 mb-1">
+                    {inc.description}
+                  </p>
+                  <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      {new Date(inc.createdAt).toLocaleString()}
+                    </span>
+                    {inc.interactionId && (
+                      <span className="text-blue-600 hover:underline cursor-pointer">
+                        View Interaction #{inc.interactionId.slice(-6)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex-shrink-0">
+                  {!inc.resolved && (
+                    <button
+                      onClick={() => resolveIncident(inc._id)}
+                      disabled={resolvingId === inc._id}
+                      className="px-4 py-2 rounded-lg bg-white border border-slate-300 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-emerald-600 hover:border-emerald-300 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {resolvingId === inc._id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4" />
+                      )}
+                      Mark Resolved
+                    </button>
+                  )}
+                  {inc.resolved && (
+                    <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                      <CheckCircle2 className="w-4 h-4" />
                       Resolved
                     </span>
                   )}
                 </div>
               </div>
-            );
-          })}
+            ))
+          )}
         </div>
-      ) : (
-        <div className="glass rounded-2xl flex flex-col items-center justify-center py-16">
-          <AlertTriangle className="w-10 h-10 text-slate-600 mb-3" />
-          <p className="text-sm text-slate-500">No incidents found</p>
-          <p className="text-xs text-slate-600 mt-1">
-            {incidents.length > 0
-              ? 'Try adjusting your filters'
-              : 'All systems operating normally'}
-          </p>
-        </div>
-      )}
-
-      {/* Incidents Over Time Chart */}
-      {chartData.length > 0 && (
-        <div className="glass rounded-2xl p-6">
-          <h2 className="text-sm font-semibold text-slate-300 mb-4">
-            Incidents Over Time
-          </h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="incidentGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} />
-              <Tooltip content={<ChartTooltip />} />
-              <Area
-                type="monotone"
-                dataKey="count"
-                name="Incidents"
-                stroke="#f43f5e"
-                fill="url(#incidentGrad)"
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

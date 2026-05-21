@@ -9,7 +9,6 @@ import {
   BrainCircuit,
   BarChart2,
   Globe,
-  Shield,
   Target,
 } from 'lucide-react';
 
@@ -27,27 +26,24 @@ const DOMAIN_LABELS = {
 
 function RiskMeter({ value = 0 }) {
   const percentage = Math.min(100, Math.max(0, value * 100));
-  let color = 'bg-emerald-400';
-  let glowColor = 'shadow-emerald-400/30';
+  let color = 'bg-emerald-500';
   if (percentage > 60) {
-    color = 'bg-rose-400';
-    glowColor = 'shadow-rose-400/30';
+    color = 'bg-rose-500';
   } else if (percentage > 30) {
-    color = 'bg-amber-400';
-    glowColor = 'shadow-amber-400/30';
+    color = 'bg-orange-500';
   }
 
   return (
     <div className="w-full">
       <div className="flex justify-between mb-1">
-        <span className="text-[10px] text-slate-500">Risk Level</span>
-        <span className="text-[10px] text-slate-400 font-medium">
+        <span className="text-[10px] font-semibold text-slate-500 uppercase">Risk Level</span>
+        <span className="text-[10px] text-slate-700 font-bold">
           {percentage.toFixed(0)}%
         </span>
       </div>
-      <div className="w-full h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full ${color} shadow-sm ${glowColor} transition-all duration-500 ease-out`}
+          className={`h-full rounded-full ${color} transition-all duration-500 ease-out`}
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -57,17 +53,17 @@ function RiskMeter({ value = 0 }) {
 
 function ConfidenceMeter({ value = 0.7 }) {
   const pct = Math.round(value * 100);
-  let color = 'bg-emerald-400';
-  if (pct < 50) color = 'bg-rose-400';
-  else if (pct < 75) color = 'bg-amber-400';
+  let color = 'bg-emerald-500';
+  if (pct < 50) color = 'bg-rose-500';
+  else if (pct < 75) color = 'bg-amber-500';
 
   return (
     <div className="w-full">
       <div className="flex justify-between mb-1">
-        <span className="text-[10px] text-slate-500">Confidence</span>
-        <span className="text-[10px] text-slate-400 font-medium">{pct}%</span>
+        <span className="text-[10px] font-semibold text-slate-500 uppercase">Confidence</span>
+        <span className="text-[10px] text-slate-700 font-bold">{pct}%</span>
       </div>
-      <div className="w-full h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full ${color} transition-all duration-500 ease-out`}
           style={{ width: `${pct}%` }}
@@ -80,13 +76,14 @@ function ConfidenceMeter({ value = 0.7 }) {
 function MetaRow({ icon: Icon, label, value, valueColor }) {
   if (value === undefined || value === null) return null;
   return (
-    <div className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0">
+    <div className="flex items-center justify-between py-2.5 border-b border-slate-200 last:border-0">
       <div className="flex items-center gap-2">
-        <Icon className="w-3.5 h-3.5 text-slate-500" />
-        <span className="text-xs text-slate-400">{label}</span>
+        <Icon className="w-4 h-4 text-slate-400" />
+        <span className="text-xs font-medium text-slate-600">{label}</span>
       </div>
       <span
-        className={`text-xs font-medium ${valueColor || 'text-slate-200'}`}
+        className={`text-xs font-semibold ${valueColor || 'text-slate-800'} text-right max-w-[50%] truncate`}
+        title={typeof value === 'object' ? JSON.stringify(value) : value}
       >
         {typeof value === 'object' ? JSON.stringify(value) : value}
       </span>
@@ -97,11 +94,13 @@ function MetaRow({ icon: Icon, label, value, valueColor }) {
 export default function MetadataPanel({ interaction }) {
   if (!interaction) {
     return (
-      <div className="glass rounded-2xl p-5 h-full flex flex-col items-center justify-center text-center">
-        <Target className="w-10 h-10 text-slate-600 mb-3" />
-        <p className="text-sm text-slate-500">No decision selected</p>
-        <p className="text-xs text-slate-600 mt-1">
-          Submit a query to see decision intelligence
+      <div className="p-6 h-full flex flex-col items-center justify-center text-center">
+        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4 border border-slate-200">
+          <Target className="w-6 h-6 text-slate-400" />
+        </div>
+        <p className="text-sm font-medium text-slate-600">No decision selected</p>
+        <p className="text-xs text-slate-500 mt-1 max-w-[200px]">
+          Submit a query to see operational metrics and routing data
         </p>
       </div>
     );
@@ -110,32 +109,23 @@ export default function MetadataPanel({ interaction }) {
   const domainLabel = DOMAIN_LABELS[interaction.domain] || DOMAIN_LABELS.general;
 
   return (
-    <div className="glass rounded-2xl p-5 space-y-4 animate-fade-up">
-      <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-        <BarChart2 className="w-4 h-4 text-cyan-400" />
+    <div className="p-5 space-y-5">
+      <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200 pb-3">
+        <BarChart2 className="w-4 h-4 text-blue-600" />
         Decision Metadata
       </h3>
 
       {/* Domain Badge */}
       {interaction.domain && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-          <Globe className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="text-xs text-slate-300 font-medium">{domainLabel}</span>
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-100 border border-slate-200">
+          <Globe className="w-4 h-4 text-slate-500" />
+          <span className="text-xs text-slate-700 font-bold">{domainLabel}</span>
         </div>
       )}
 
-      <div className="space-y-0.5">
-        <MetaRow
-          icon={Cpu}
-          label="Model"
-          value={interaction.model}
-          valueColor="text-cyan-400"
-        />
-        <MetaRow
-          icon={Route}
-          label="Routing Reason"
-          value={interaction.routing_reason}
-        />
+      <div className="space-y-0 text-slate-700">
+        <MetaRow icon={Cpu} label="Model" value={interaction.model} valueColor="text-blue-700" />
+        <MetaRow icon={Route} label="Routing Reason" value={interaction.routing_reason} />
         <MetaRow
           icon={Gauge}
           label="Complexity"
@@ -149,7 +139,7 @@ export default function MetadataPanel({ interaction }) {
           icon={Hash}
           label="Total Tokens"
           value={interaction.token_usage?.total_tokens?.toLocaleString()}
-          valueColor="text-purple-400"
+          valueColor="text-purple-700"
         />
         <MetaRow
           icon={DollarSign}
@@ -159,7 +149,7 @@ export default function MetadataPanel({ interaction }) {
               ? `$${Number(interaction.estimated_cost).toFixed(6)}`
               : undefined
           }
-          valueColor="text-emerald-400"
+          valueColor="text-emerald-600"
         />
         <MetaRow
           icon={Clock}
@@ -169,32 +159,28 @@ export default function MetadataPanel({ interaction }) {
               ? `${interaction.latency_ms}ms`
               : undefined
           }
-          valueColor="text-amber-400"
+          valueColor="text-amber-600"
         />
       </div>
 
-      {/* Confidence Meter */}
-      {interaction.confidence_score !== undefined && (
-        <div className="pt-1">
+      {/* Confidence & Risk Meters */}
+      <div className="space-y-4 pt-2">
+        {interaction.confidence_score !== undefined && (
           <ConfidenceMeter value={interaction.confidence_score} />
-        </div>
-      )}
-
-      {/* Incident Risk Meter */}
-      {interaction.incident_risk !== undefined && (
-        <div className="pt-1">
+        )}
+        {interaction.incident_risk !== undefined && (
           <RiskMeter value={interaction.incident_risk / 100} />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Memory Context */}
       {interaction.memory_context && (
-        <div className="pt-2">
-          <div className="flex items-center gap-2 mb-2">
-            <BrainCircuit className="w-3.5 h-3.5 text-purple-400" />
-            <span className="text-xs text-slate-400">Memory Context</span>
+        <div className="pt-2 border-t border-slate-200">
+          <div className="flex items-center gap-2 mb-2 pt-2">
+            <BrainCircuit className="w-4 h-4 text-purple-600" />
+            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Memory Context</span>
           </div>
-          <div className="bg-white/[0.03] rounded-lg p-3 text-xs text-slate-400 leading-relaxed max-h-32 overflow-y-auto">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-600 leading-relaxed max-h-40 overflow-y-auto break-words scrollbar-thin">
             {(() => {
               const ctx = interaction.memory_context;
               if (typeof ctx === 'string') return ctx;
@@ -202,11 +188,13 @@ export default function MetadataPanel({ interaction }) {
                 return ctx.length === 0
                   ? 'No memories'
                   : ctx.map((item, i) => (
-                      <div key={i} className="mb-1.5 last:mb-0">
-                        <span className="text-purple-400 mr-1">↩</span>
-                        {typeof item === 'string'
-                          ? item
-                          : item?.content || item?.text || item?.fact || JSON.stringify(item)}
+                      <div key={i} className="mb-2 last:mb-0 break-words flex items-start gap-1">
+                        <span className="text-purple-400 shrink-0">↩</span>
+                        <span className="flex-1">
+                          {typeof item === 'string'
+                            ? item
+                            : item?.content || item?.text || item?.fact || JSON.stringify(item)}
+                        </span>
                       </div>
                     ));
               }
@@ -214,13 +202,15 @@ export default function MetadataPanel({ interaction }) {
                 const results = Array.isArray(ctx.results) ? ctx.results : null;
                 if (results && results.length > 0) {
                   return results.map((r, i) => (
-                    <div key={i} className="mb-1.5 last:mb-0">
-                      <span className="text-purple-400 mr-1">↩</span>
-                      {typeof r === 'string' ? r : r?.content || r?.text || JSON.stringify(r)}
+                    <div key={i} className="mb-2 last:mb-0 break-words flex items-start gap-1">
+                      <span className="text-purple-400 shrink-0">↩</span>
+                      <span className="flex-1">
+                        {typeof r === 'string' ? r : r?.content || r?.text || JSON.stringify(r)}
+                      </span>
                     </div>
                   ));
                 }
-                return <pre className="whitespace-pre-wrap break-words">{JSON.stringify(ctx, null, 2)}</pre>;
+                return <pre className="whitespace-pre-wrap break-words font-sans text-xs">{JSON.stringify(ctx, null, 2)}</pre>;
               }
               return String(ctx);
             })()}

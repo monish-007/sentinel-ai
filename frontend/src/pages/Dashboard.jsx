@@ -1,355 +1,241 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
+  Shield,
+  ArrowRight,
   Activity,
   Clock,
   DollarSign,
   AlertTriangle,
-  TrendingUp,
-  Loader2,
-  BarChart2,
   Zap,
-  Shield,
-  Target,
+  Brain,
+  Cpu,
+  Loader2,
+  Sparkles,
 } from 'lucide-react';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 import api from '../api/client.js';
-import StatCard from '../components/StatCard.jsx';
-import TimelineItem from '../components/TimelineItem.jsx';
-import StatusBadge from '../components/StatusBadge.jsx';
 
-const MODEL_COLORS = ['#06b6d4', '#8b5cf6', '#f59e0b', '#10b981', '#f43f5e', '#3b82f6', '#ec4899', '#14b8a6'];
-
-const CustomTooltip = ({ active, payload }) => {
-  if (active && payload?.length) {
-    return (
-      <div className="glass rounded-lg px-3 py-2 text-xs shadow-xl">
-        <p className="text-slate-200 font-medium">{payload[0].name || payload[0].payload?.name}</p>
-        {payload.map((p, i) => (
-          <p key={i} style={{ color: p.color || p.fill }} className="font-medium">
-            {p.name}: {typeof p.value === 'number' ? p.value.toFixed(4) : p.value}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
-
-function ShimmerCard() {
-  return (
-    <div className="glass rounded-2xl p-5 animate-pulse">
-      <div className="w-11 h-11 rounded-xl bg-white/[0.05] mb-4" />
-      <div className="h-7 w-20 bg-white/[0.05] rounded mb-2" />
-      <div className="h-4 w-28 bg-white/[0.04] rounded" />
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  CascadeFlow Comparison Data                                         */
-/* ------------------------------------------------------------------ */
-function generateCascadeComparison(overview) {
-  const totalQueries = overview?.totalQueries ?? 0;
-  const avgLatency = overview?.avgLatency ?? 0;
-  const totalCost = overview?.totalCost ?? 0;
-
-  // Simulate "without cascade" — static routing to the expensive model
-  const staticCost = totalCost * 2.8 || 0.012;
-  const staticLatency = avgLatency * 1.6 || 1200;
-
-  return {
-    cost: [
-      { name: 'Without CascadeFlow', value: Number(staticCost.toFixed(4)), fill: '#f43f5e' },
-      { name: 'With CascadeFlow', value: Number(totalCost.toFixed(4)) || 0.0043, fill: '#10b981' },
-    ],
-    latency: [
-      { name: 'Without CascadeFlow', value: Math.round(staticLatency), fill: '#f59e0b' },
-      { name: 'With CascadeFlow', value: Math.round(avgLatency) || 450, fill: '#06b6d4' },
-    ],
-    savings: totalQueries > 0
-      ? { costPct: Math.round((1 - totalCost / staticCost) * 100), latencyPct: Math.round((1 - avgLatency / staticLatency) * 100) }
-      : { costPct: 65, latencyPct: 38 },
-  };
-}
+const FEATURES = [
+  {
+    icon: Zap,
+    title: 'CascadeFlow Routing',
+    desc: 'Adaptive model selection based on query complexity — cheap models for simple tasks, powerful models for critical decisions.',
+    accent: 'text-amber-600',
+    bg: 'bg-amber-50',
+    border: 'border-amber-200',
+  },
+  {
+    icon: Brain,
+    title: 'Memory Intelligence',
+    desc: 'Hindsight-powered memory that learns from past decisions and improves future routing and risk assessment.',
+    accent: 'text-purple-600',
+    bg: 'bg-purple-50',
+    border: 'border-purple-200',
+  },
+  {
+    icon: Shield,
+    title: 'Governance Engine',
+    desc: 'Real-time incident detection, compliance monitoring, and automated risk flagging across all AI interactions.',
+    accent: 'text-rose-600',
+    bg: 'bg-rose-50',
+    border: 'border-rose-200',
+  },
+  {
+    icon: DollarSign,
+    title: 'Cost Optimization',
+    desc: 'Up to 65% cost reduction through intelligent model routing. Every token is tracked and optimized.',
+    accent: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200',
+  },
+];
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [overview, setOverview] = useState(null);
-  const [routingHistory, setRoutingHistory] = useState([]);
-  const [incidents, setIncidents] = useState([]);
+  const [recentDecisions, setRecentDecisions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [overviewData, routingData, incidentData] = await Promise.allSettled([
+        const [overviewRes, routingRes] = await Promise.allSettled([
           api.get('/analytics/overview'),
-          api.get('/analytics/routing?limit=10'),
-          api.get('/incidents?resolved=false'),
+          api.get('/analytics/routing?limit=5'),
         ]);
-
-        if (overviewData.status === 'fulfilled') setOverview(overviewData.value);
-        if (routingData.status === 'fulfilled') {
-          const rd = routingData.value;
-          setRoutingHistory(Array.isArray(rd) ? rd : rd?.decisions || rd?.data || []);
+        if (overviewRes.status === 'fulfilled') setOverview(overviewRes.value);
+        if (routingRes.status === 'fulfilled') {
+          const r = routingRes.value;
+          setRecentDecisions(Array.isArray(r) ? r : r?.data || r?.decisions || []);
         }
-        if (incidentData.status === 'fulfilled') {
-          const id = incidentData.value;
-          setIncidents(Array.isArray(id) ? id : id?.incidents || id?.data || []);
-        }
-      } catch (err) {
-        console.error('Dashboard fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
+      } catch (_) {}
+      finally { setLoading(false); }
     }
     fetchData();
   }, []);
 
-  const modelBreakdown = overview?.modelBreakdown || [];
-  const modelUsageData = modelBreakdown.length > 0
-    ? modelBreakdown.map((m) => ({ name: m.model, value: m.count }))
-    : [];
-
-  const cascade = generateCascadeComparison(overview);
-
-  const severityBadge = (severity) => {
-    switch (severity?.toLowerCase()) {
-      case 'critical': return <StatusBadge label="Critical" variant="danger" />;
-      case 'high': return <StatusBadge label="High" variant="warning" />;
-      case 'medium': return <StatusBadge label="Medium" variant="info" />;
-      default: return <StatusBadge label={severity || 'Low'} variant="neutral" />;
-    }
-  };
+  const stats = [
+    { label: 'Total Decisions', value: (overview?.totalQueries ?? 0).toLocaleString(), icon: Activity, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Avg Latency', value: `${(overview?.avgLatency ?? 0).toFixed(0)}ms`, icon: Clock, color: 'text-cyan-600', bg: 'bg-cyan-50' },
+    { label: 'Total Cost', value: `$${(overview?.totalCost ?? 0).toFixed(4)}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Incidents', value: (overview?.incidentCount ?? 0).toString(), icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
+  ];
 
   return (
-    <div className="space-y-8 animate-fade-up">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-          <Target className="w-8 h-8 text-cyan-400" />
-          Decision Command Center
-        </h1>
-        <p className="text-slate-400 mt-1">
-          Enterprise AI governance & decision intelligence overview
-        </p>
-      </div>
-
-      {/* Stat Cards */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => <ShimmerCard key={i} />)}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Total Decisions"
-            value={(overview?.totalQueries ?? 0).toLocaleString()}
-            subtitle="Decision analyses"
-            icon={Activity}
-            color="cyan"
-          />
-          <StatCard
-            title="Avg Latency"
-            value={`${(overview?.avgLatency ?? 0).toFixed?.(0) ?? 0}ms`}
-            subtitle="Decision time"
-            icon={Clock}
-            color="amber"
-          />
-          <StatCard
-            title="Cost Saved"
-            value={`${cascade.savings.costPct}%`}
-            subtitle="Via CascadeFlow routing"
-            icon={DollarSign}
-            color="emerald"
-          />
-          <StatCard
-            title="Governance Alerts"
-            value={(overview?.incidentCount ?? incidents.length).toString()}
-            subtitle="Active flags"
-            icon={Shield}
-            color="rose"
-          />
-        </div>
-      )}
-
-      {/* CascadeFlow Comparison */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Cost Comparison */}
-        <div className="glass rounded-2xl p-6">
-          <h2 className="text-sm font-semibold text-slate-300 mb-1 flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-emerald-400" />
-            Cost: Static vs CascadeFlow
-          </h2>
-          <p className="text-[10px] text-emerald-400 mb-4">
-            {cascade.savings.costPct}% cost reduction with adaptive routing
-          </p>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={cascade.cost} layout="vertical" barCategoryGap="30%">
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-              <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-              <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} width={140} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="value" name="Cost ($)" radius={[0, 6, 6, 0]} barSize={28}>
-                {cascade.cost.map((entry, i) => (
-                  <Cell key={i} fill={entry.fill} fillOpacity={0.85} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Latency Comparison */}
-        <div className="glass rounded-2xl p-6">
-          <h2 className="text-sm font-semibold text-slate-300 mb-1 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-cyan-400" />
-            Latency: Static vs CascadeFlow
-          </h2>
-          <p className="text-[10px] text-cyan-400 mb-4">
-            {cascade.savings.latencyPct}% latency reduction with smart routing
-          </p>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={cascade.latency} layout="vertical" barCategoryGap="30%">
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-              <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-              <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} width={140} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="value" name="Latency (ms)" radius={[0, 6, 6, 0]} barSize={28}>
-                {cascade.latency.map((entry, i) => (
-                  <Cell key={i} fill={entry.fill} fillOpacity={0.85} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Three-column: Model Dist + Routing + Incidents */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Model Usage Pie */}
-        <div className="glass rounded-2xl p-6 lg:col-span-1">
-          <h2 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
-            <Zap className="w-4 h-4 text-purple-400" />
-            Model Distribution
-          </h2>
-          {modelUsageData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={modelUsageData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={3}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {modelUsageData.map((_, idx) => (
-                    <Cell key={idx} fill={MODEL_COLORS[idx % MODEL_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-                <Legend
-                  wrapperStyle={{ fontSize: '10px' }}
-                  formatter={(value) => <span className="text-slate-400">{value}</span>}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-48 text-slate-500">
-              <Activity className="w-8 h-8 mb-2 text-slate-600" />
-              <p className="text-sm">No routing data yet</p>
+    <div className="max-w-6xl mx-auto space-y-8 animate-fade-up">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm p-8 md:p-12">
+        <div className="relative z-10 max-w-2xl">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-md">
+              <Shield className="w-7 h-7 text-white" />
             </div>
-          )}
-        </div>
-
-        {/* Recent Routing Timeline */}
-        <div className="glass rounded-2xl p-6 lg:col-span-2">
-          <h2 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-cyan-400" />
-            Recent Decision Routes
-          </h2>
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
-            </div>
-          ) : routingHistory.length > 0 ? (
-            <div className="max-h-[400px] overflow-y-auto pr-2 space-y-0">
-              {routingHistory.map((item, idx) => (
-                <TimelineItem
-                  key={item.id || idx}
-                  time={item.createdAt || item.timestamp}
-                  title={item.query?.substring(0, 80) || `Decision #${idx + 1}`}
-                  description={item.routingReason || item.routing_reason}
-                  model={item.modelSelected || item.model}
-                  cost={item.costEstimate ?? item.estimated_cost}
-                  latency={item.latencyMs ?? item.latency_ms}
-                  type="routing"
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-              <Clock className="w-8 h-8 mb-2 text-slate-600" />
-              <p className="text-sm">No decisions yet</p>
-              <p className="text-xs text-slate-600 mt-1">
-                Submit a query to see decision routing
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
+                SentinelOps AI
+              </h1>
+              <p className="text-[11px] font-bold text-slate-500 tracking-widest uppercase mt-1">
+                Enterprise Decision Intelligence
               </p>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
 
-      {/* Governance Alerts */}
-      <div className="glass rounded-2xl p-6">
-        <h2 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
-          <Shield className="w-4 h-4 text-rose-400" />
-          Active Governance Alerts
-        </h2>
-        {incidents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {incidents.map((incident, idx) => (
+          <p className="text-base text-slate-600 leading-relaxed mb-8 max-w-xl">
+            An AI-powered decision agent that analyzes enterprise queries across healthcare,
+            finance, cybersecurity, and more — with adaptive model routing, governance monitoring,
+            and memory-enhanced intelligence.
+          </p>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/chat')}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-medium text-sm shadow-sm hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+            >
+              Start Auditing
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => navigate('/analytics')}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white border border-slate-300 text-slate-700 font-medium text-sm hover:bg-slate-50 hover:border-slate-400 transition-all duration-200"
+            >
+              View Analytics
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Live Stats */}
+      <section>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((s) => (
+            <div
+              key={s.label}
+              className="bg-white border border-slate-200 shadow-sm rounded-2xl px-5 py-5 flex items-center gap-4"
+            >
+              <div className={`w-12 h-12 rounded-xl ${s.bg} flex items-center justify-center flex-shrink-0`}>
+                <s.icon className={`w-6 h-6 ${s.color}`} />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-900 leading-tight">
+                  {loading ? '—' : s.value}
+                </p>
+                <p className="text-[11px] font-semibold text-slate-500 uppercase mt-0.5">{s.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Capabilities */}
+      <section>
+        <h2 className="text-lg font-bold text-slate-800 mb-4">Core Capabilities</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {FEATURES.map((f) => (
+            <div
+              key={f.title}
+              className={`bg-white border ${f.border} rounded-2xl p-6 hover:shadow-md transition-shadow duration-200 group relative overflow-hidden`}
+            >
+              <div className="flex items-start gap-4 relative z-10">
+                <div className={`w-10 h-10 rounded-xl ${f.bg} flex items-center justify-center flex-shrink-0`}>
+                  <f.icon className={`w-5 h-5 ${f.accent}`} />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-bold text-slate-900 mb-1.5">
+                    {f.title}
+                  </h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    {f.desc}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Recent Decisions */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-slate-800">Recent Decisions</h2>
+          <button
+            onClick={() => navigate('/audit')}
+            className="text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-lg"
+          >
+            View All
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12 bg-white rounded-2xl border border-slate-200">
+            <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+          </div>
+        ) : recentDecisions.length > 0 ? (
+          <div className="space-y-3">
+            {recentDecisions.map((d, idx) => (
               <div
-                key={incident.id || idx}
-                className="bg-white/[0.02] rounded-xl p-4 border border-white/[0.05] hover:border-white/[0.1] transition-all"
+                key={d._id || idx}
+                className="bg-white border border-slate-200 shadow-sm rounded-xl px-5 py-4 flex items-center gap-4 hover:border-blue-200 hover:bg-blue-50/50 transition-colors duration-150"
               >
-                <div className="flex items-start justify-between mb-2">
-                  {severityBadge(incident.severity)}
-                  <span className="text-[10px] text-slate-500">
-                    {incident.createdAt || incident.timestamp
-                      ? new Date(incident.createdAt || incident.timestamp).toLocaleTimeString()
-                      : '—'}
+                <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 border border-slate-200">
+                  <Cpu className="w-5 h-5 text-slate-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">
+                    {d.query?.substring(0, 80) || `Decision #${idx + 1}`}
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-1 truncate">
+                    {d.routingReason || d.routing_reason || '—'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-5 flex-shrink-0 text-xs font-medium text-slate-500">
+                  <span className="inline-flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-md">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    {d.latencyMs ?? d.latency_ms ?? '—'}ms
+                  </span>
+                  <span className="inline-flex items-center bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md">
+                    {d.modelSelected || d.model || '—'}
+                  </span>
+                  <span className="text-slate-400">
+                    {d.createdAt ? new Date(d.createdAt).toLocaleDateString() : ''}
                   </span>
                 </div>
-                <p className="text-sm text-slate-300 mb-1 font-medium">
-                  {(incident.type || 'Incident').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                </p>
-                <p className="text-xs text-slate-500 line-clamp-2">
-                  {incident.description || 'No description'}
-                </p>
               </div>
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-8 text-slate-500">
-            <Shield className="w-8 h-8 mb-2 text-slate-600" />
-            <p className="text-sm">No active governance alerts</p>
-            <p className="text-xs text-slate-600 mt-1">All systems compliant</p>
+          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-10 text-center">
+            <Sparkles className="w-10 h-10 text-slate-300 mx-auto mb-4" />
+            <p className="text-[15px] font-medium text-slate-600">No decisions yet</p>
+            <button
+              onClick={() => navigate('/chat')}
+              className="mt-4 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center gap-1.5 bg-blue-50 px-4 py-2 rounded-lg"
+            >
+              Make your first decision <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

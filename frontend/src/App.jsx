@@ -9,9 +9,9 @@ import Memory from './pages/Memory.jsx';
 
 export default function App() {
   return (
-    <div className="flex h-screen bg-sentinel-dark">
+    <div className="flex h-screen bg-slate-50 text-slate-900">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+      <main className="flex-1 overflow-y-auto p-5 lg:p-7 relative z-10">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/chat" element={<Chat />} />

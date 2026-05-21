@@ -237,13 +237,15 @@ function analyzeResponse(
     );
 
   if (hasEnterpriseRisk) {
-    riskScore += 10;
+    const riskSignalCount = ENTERPRISE_RISK_SIGNALS.filter((kw) => lowerQuery.includes(kw)).length;
+    const govSeverity = riskSignalCount >= 3 ? 'high' : riskSignalCount >= 2 ? 'medium' : 'medium';
+    riskScore += 15 + riskSignalCount * 5;
 
     incidents.push({
       type: 'enterprise_governance_risk',
-      severity: 'low',
+      severity: govSeverity,
       description:
-        'Enterprise compliance/governance query detected requiring elevated monitoring',
+        `Enterprise governance query detected (${riskSignalCount} risk signals: ${ENTERPRISE_RISK_SIGNALS.filter((kw) => lowerQuery.includes(kw)).join(', ')})`,
       modelUsed: model,
     });
   }
@@ -255,13 +257,13 @@ function analyzeResponse(
     hasEnterpriseRisk &&
     model === 'llama-3.1-8b-instant'
   ) {
-    riskScore += 40;
+    riskScore += 45;
 
     incidents.push({
       type: 'model_mismatch',
-      severity: 'high',
+      severity: 'critical',
       description:
-        'High-risk enterprise query routed to lightweight model',
+        'CRITICAL: High-risk enterprise governance query routed to lightweight model — requires escalation',
       modelUsed: model,
     });
   }
