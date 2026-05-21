@@ -1,36 +1,115 @@
-# Dependencies
+# ═══════════════════════════════════════════════════════════════
+#  SentinelOps AI — .gitignore
+#  Stack: React+Vite | Node+Express | MongoDB | Groq | Hindsight
+# ═══════════════════════════════════════════════════════════════
+
+# ──────────────────────────── Dependencies ────────────────────
 node_modules/
+.pnp
+.pnp.js
 
-# Environment variables
+# ──────────────────────── Environment / Secrets ───────────────
+# CRITICAL — never commit API keys or connection strings
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 
-# Build output
+# ─────────────────────────── Build Output ─────────────────────
 dist/
 dist-ssr/
 build/
+coverage/
+*.tsbuildinfo
 
-# Logs
+# ────────────────────────────── Logs ──────────────────────────
 logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
+yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
-# Editor
+# ──────────────────────── Vite / Bundler Cache ────────────────
+.vite/
+.cache/
+.parcel-cache/
+.turbo/
+
+# ────────────────────── Temporary / Runtime ───────────────────
+tmp/
+temp/
+*.local
+*.pid
+*.seed
+*.pid.lock
+
+# ──────────────────────── Testing / Coverage ──────────────────
+coverage/
+.nyc_output/
+*.lcov
+
+# ────────────────────────── OS Generated ──────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ──────────────────────── IDE / Editor Files ──────────────────
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
 
-# OS
-.DS_Store
-Thumbs.db
+# ──────────────── Deployment Platform Artifacts ───────────────
+.vercel
+.render
+.netlify
+.serverless/
+.firebase/
+.amplify/
 
-# Keep .env.example
-!.env.example
+# ────────────────── Python (AI agents / scripts) ──────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+*.egg
+
+# ────────────────────── MongoDB / Database ────────────────────
+*.mongodump
+dump/
+data/db/
+
+# ──────────────────────────── Misc ────────────────────────────
+*.tgz
+*.tar.gz
+*.zip
+.eslintcache
+.stylelintcache
