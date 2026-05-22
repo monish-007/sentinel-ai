@@ -21,6 +21,9 @@ const interactionSchema = new mongoose.Schema(
       score: { type: Number },
       level: { type: String, enum: ['low', 'medium', 'high'] },
     },
+    domain: { type: String },
+    urgency: { type: String, enum: ['low', 'medium', 'high', 'critical'] },
+    sensitivityLevel: { type: String },
   },
   { timestamps: true }
 );

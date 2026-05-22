@@ -56,6 +56,9 @@ async function getOverview() {
       percentage: totalQueries > 0 ? Number(((count / totalQueries) * 100).toFixed(1)) : 0,
     }));
 
+    const domainBreakdown = await getDomainBreakdown();
+    const riskDistribution = await getRiskDistribution();
+
     return {
       totalQueries,
       avgLatency,
@@ -66,6 +69,8 @@ async function getOverview() {
         complexityCount > 0
           ? Number((complexitySum / complexityCount).toFixed(1))
           : 0,
+      domainBreakdown,
+      riskDistribution,
     };
   } catch (err) {
     console.error('[Analytics] getOverview failed:', err.message);
@@ -199,10 +204,54 @@ async function getLatencyStats() {
   }
 }
 
+/**
+ * Domain distribution.
+ */
+async function getDomainBreakdown() {
+  try {
+    const result = await Interaction.aggregate([
+      { $match: { domain: { $exists: true, $ne: null } } },
+      { $group: { _id: '$domain', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    const total = result.reduce((sum, r) => sum + r.count, 0);
+    return result.map(r => ({
+      domain: r._id,
+      count: r.count,
+      percentage: total > 0 ? ((r.count / total) * 100).toFixed(1) : 0
+    }));
+  } catch (err) {
+    console.error('[Analytics] getDomainBreakdown failed:', err.message);
+    return [];
+  }
+}
+
+/**
+ * Risk distribution.
+ */
+async function getRiskDistribution() {
+  try {
+    const interactions = await Interaction.find({ incidentRisk: { $exists: true } }).select('incidentRisk').lean();
+    const buckets = { low: 0, medium: 0, high: 0, critical: 0 };
+    interactions.forEach(i => {
+      if (i.incidentRisk >= 75) buckets.critical++;
+      else if (i.incidentRisk >= 50) buckets.high++;
+      else if (i.incidentRisk >= 25) buckets.medium++;
+      else buckets.low++;
+    });
+    return Object.entries(buckets).map(([level, count]) => ({ level, count }));
+  } catch (err) {
+    console.error('[Analytics] getRiskDistribution failed:', err.message);
+    return [];
+  }
+}
+
 module.exports = {
   getOverview,
   getCostBreakdown,
   getRoutingTimeline,
   getModelDistribution,
   getLatencyStats,
+  getDomainBreakdown,
+  getRiskDistribution,
 };

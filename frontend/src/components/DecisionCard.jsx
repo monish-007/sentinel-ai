@@ -5,9 +5,10 @@ import {
   DollarSign,
   Scale,
   Brain,
-  TrendingUp,
   CheckCircle2,
   FileText,
+  ClipboardList,
+  TrendingUp,
 } from 'lucide-react';
 
 const RISK_CONFIG = {
@@ -38,6 +39,13 @@ export default function DecisionCard({ decision, onGenerateReport }) {
 
   return (
     <div className="w-full space-y-3 animate-fade-up min-w-0 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+      {decision.escalationRequired === true && (
+        <div className="bg-rose-50 border border-rose-200 px-4 py-2.5 flex items-center gap-2 text-rose-700 font-bold text-sm rounded-t-2xl">
+          <AlertTriangle className="w-4 h-4" />
+          ESCALATION REQUIRED — Immediate review by governance team recommended
+        </div>
+      )}
+
       {/* Header: Domain + Risk */}
       <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
         <div className="flex items-center gap-2">
@@ -46,9 +54,21 @@ export default function DecisionCard({ decision, onGenerateReport }) {
             {domain.label}
           </span>
         </div>
-        <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${risk.bg} ${risk.text} ${risk.border} border`}>
-          {risk.label}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${risk.bg} ${risk.text} ${risk.border} border`}>
+            {risk.label}
+          </span>
+          {decision.governanceSeverity && (
+            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+              decision.governanceSeverity === 'critical-block' ? 'bg-rose-100 text-rose-700' :
+              decision.governanceSeverity === 'mandatory' ? 'bg-orange-100 text-orange-700' :
+              decision.governanceSeverity === 'advisory' ? 'bg-amber-100 text-amber-700' :
+              'bg-slate-100 text-slate-600'
+            }`}>
+              {decision.governanceSeverity}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Decision Summary */}
@@ -72,6 +92,25 @@ export default function DecisionCard({ decision, onGenerateReport }) {
           {decision.recommendedAction || 'Review and assess.'}
         </p>
       </div>
+
+      {/* Financial Impact */}
+      {decision.financialImpact && typeof decision.financialImpact === 'object' && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-100">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-rose-500 mb-1">Estimated Loss</div>
+            <div className="text-sm font-bold text-rose-700">{decision.financialImpact.estimatedLoss || 'Not assessed'}</div>
+          </div>
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 mb-1">Potential Savings</div>
+            <div className="text-sm font-bold text-emerald-700">{decision.financialImpact.estimatedSavings || 'Not assessed'}</div>
+          </div>
+          {decision.financialImpact.timeframe && decision.financialImpact.timeframe !== 'N/A' && (
+            <div className="col-span-2 text-xs text-slate-500 font-medium px-1">
+              Timeframe: {decision.financialImpact.timeframe} | Currency: {decision.financialImpact.currency || 'USD'}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Two-column: Tradeoffs + Governance */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
@@ -115,6 +154,17 @@ export default function DecisionCard({ decision, onGenerateReport }) {
           )}
         </div>
       </div>
+
+      {/* Operational Recommendation */}
+      {decision.operationalRecommendation && (
+        <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
+          <div className="flex items-center gap-2 mb-2">
+            <ClipboardList className="w-4 h-4 text-blue-600" />
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Operational Recommendation</span>
+          </div>
+          <p className="text-sm text-blue-800 font-medium leading-relaxed">{decision.operationalRecommendation}</p>
+        </div>
+      )}
 
       {/* Memory References */}
       {decision._memoryRefs && decision._memoryRefs.length > 0 && (

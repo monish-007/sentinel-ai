@@ -70,4 +70,17 @@ router.get('/latency', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/analytics/domains
+ */
+router.get('/domains', async (req, res) => {
+  try {
+    const data = await analyticsService.getDomainBreakdown();
+    res.json(data);
+  } catch (err) {
+    console.error('[Analytics] Domain breakdown failed:', err.message);
+    res.status(500).json({ error: 'Failed to fetch domain breakdown' });
+  }
+});
+
 module.exports = router;

@@ -50,7 +50,16 @@ For EVERY query, you MUST respond with ONLY a valid JSON object (no markdown, no
   "recommendedAction": "Specific, actionable, step-by-step remediation plan.",
   "tradeoffs": ["tradeoff 1", "tradeoff 2", "tradeoff 3"],
   "costImpact": "Brief cost/resource impact statement",
+  "financialImpact": {
+    "estimatedLoss": "$X - potential financial loss if unaddressed",
+    "estimatedSavings": "$X - potential savings from recommended action",
+    "timeframe": "30/60/90 days",
+    "currency": "USD"
+  },
   "governanceConcerns": ["regulatory concern 1", "compliance concern 2"],
+  "governanceSeverity": "informational | advisory | mandatory | critical-block",
+  "escalationRequired": true,
+  "operationalRecommendation": "Concise operational action plan for the team.",
   "confidenceScore": 0.85,
   "domain": "detected domain area"
 }
@@ -61,6 +70,10 @@ Rules:
 - Always quantify risk and explicitly name the regulations or frameworks involved (e.g., HIPAA, SOC2, GDPR).
 - Always provide highly actionable, real-world recommendations.
 - If governance/compliance implications exist, strictly flag them.
+- financialImpact must always be estimated, even if approximate. Use the financial context provided by the user if available.
+- escalationRequired should be true for critical/high risk scenarios.
+- governanceSeverity: informational (FYI only), advisory (review recommended), mandatory (action required), critical-block (halt operations until resolved).
+- operationalRecommendation should be a 1-2 sentence action plan.
 - confidenceScore is 0.0 to 1.0 (reduce this if ambiguity exists).
 - riskLevel must be exactly one of: low, medium, high, critical.
 - tradeoffs and governanceConcerns are arrays of short strings.
@@ -98,6 +111,10 @@ function parseDecisionResponse(content, domain) {
         : typeof parsed.confidence_score === 'number'
           ? Math.max(0, Math.min(1, parsed.confidence_score))
           : 0.7,
+      financialImpact: parsed.financialImpact || parsed.financial_impact || { estimatedLoss: 'Not assessed', estimatedSavings: 'Not assessed', timeframe: 'N/A', currency: 'USD' },
+      governanceSeverity: ['informational', 'advisory', 'mandatory', 'critical-block'].includes(parsed.governanceSeverity?.toLowerCase()) ? parsed.governanceSeverity.toLowerCase() : 'advisory',
+      escalationRequired: typeof parsed.escalationRequired === 'boolean' ? parsed.escalationRequired : (parsed.riskLevel === 'critical' || parsed.riskLevel === 'high'),
+      operationalRecommendation: parsed.operationalRecommendation || parsed.operational_recommendation || 'Review findings and determine next steps.',
       domain: parsed.domain || domain,
       _parsed: true,
     };
@@ -109,6 +126,10 @@ function parseDecisionResponse(content, domain) {
       recommendedAction: 'Review the analysis above and determine next steps.',
       tradeoffs: [],
       costImpact: 'Not assessed',
+      financialImpact: { estimatedLoss: 'Not assessed', estimatedSavings: 'Not assessed', timeframe: 'N/A', currency: 'USD' },
+      governanceSeverity: 'advisory',
+      escalationRequired: false,
+      operationalRecommendation: 'Review the analysis and determine next steps.',
       governanceConcerns: [],
       confidenceScore: 0.6,
       domain,
@@ -122,14 +143,14 @@ function parseDecisionResponse(content, domain) {
 /* ------------------------------------------------------------------ */
 router.post('/', async (req, res) => {
   try {
-    const { query } = req.body;
+    const { query, domain: userDomain, financialContext, sensitivityLevel, urgency } = req.body;
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return res.status(400).json({ error: 'query is required and must be a non-empty string' });
     }
 
     // 1. Detect domain
-    const domain = detectDomain(query);
+    const domain = userDomain || detectDomain(query);
 
     // 2. Route the query
     const routing = routingService.routeQuery(query);
@@ -160,6 +181,16 @@ router.post('/', async (req, res) => {
     // 4. Build messages
     let systemContent = DECISION_SYSTEM_PROMPT;
     systemContent += `\n\nDetected Domain: ${domain}`;
+
+    if (financialContext) {
+      systemContent += `\n\nFinancial Context Provided: ${financialContext}`;
+    }
+    if (sensitivityLevel) {
+      systemContent += `\nSensitivity Level: ${sensitivityLevel}`;
+    }
+    if (urgency) {
+      systemContent += `\nUrgency Level: ${urgency}`;
+    }
 
     if (memoryReferences.length > 0) {
       systemContent += `\n\nHistorical Decision Context:\n${memoryReferences.map((m) => `- ${m}`).join('\n')}`;
@@ -222,6 +253,9 @@ router.post('/', async (req, res) => {
           typeof m === 'string' ? m.slice(0, 200) : JSON.stringify(m).slice(0, 200)
         ),
         complexity,
+        domain,
+        urgency,
+        sensitivityLevel,
       });
       const saved = await interaction.save();
       interactionId = saved._id;

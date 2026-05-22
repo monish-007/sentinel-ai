@@ -11,6 +11,9 @@ import {
   Menu,
   PanelRightClose,
   PanelRightOpen,
+  Settings,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 import api from '../api/client.js';
@@ -80,6 +83,12 @@ export default function Chat() {
   const [interactions, setInteractions] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [activeInteractionId, setActiveInteractionId] = useState(null);
+  const [paramsOpen, setParamsOpen] = useState(false);
+  
+  // Advanced parameters
+  const [financialContext, setFinancialContext] = useState('');
+  const [urgency, setUrgency] = useState('medium');
+  const [sensitivityLevel, setSensitivityLevel] = useState('internal');
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -177,7 +186,12 @@ export default function Chat() {
     setDecisionOpen(true);
 
     try {
-      const r = await api.post('/chat', { query });
+      const r = await api.post('/chat', { 
+        query,
+        financialContext: financialContext.trim() || undefined,
+        urgency,
+        sensitivityLevel
+      });
 
       console.log('API RESPONSE:', r);
 
@@ -380,25 +394,79 @@ export default function Chat() {
         </div>
 
         {/* INPUT */}
-        <div className="p-4 border-t border-slate-200">
-          <div className="max-w-4xl mx-auto relative">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Message SentinelOps AI for audit intelligence..."
-              rows={1}
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-4 pr-14 py-3.5 text-sm resize-none"
-            />
-
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || isTyping}
-              className="absolute right-2 bottom-2 w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white disabled:opacity-40"
+        <div className="p-4 border-t border-slate-200 bg-white z-10">
+          <div className="max-w-4xl mx-auto">
+            {/* Advanced Parameters Toggle */}
+            <button 
+              onClick={() => setParamsOpen(!paramsOpen)}
+              className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 mb-3 px-2 transition-colors"
             >
-              <Send className="w-4 h-4" />
+              <Settings className="w-3.5 h-3.5" />
+              Audit Parameters
+              {paramsOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             </button>
+
+            {/* Advanced Parameters Panel */}
+            {paramsOpen && (
+              <div className="mb-4 p-4 rounded-xl border border-slate-200 bg-slate-50 grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-up">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Financial Context</label>
+                  <input 
+                    type="text" 
+                    value={financialContext}
+                    onChange={e => setFinancialContext(e.target.value)}
+                    placeholder="e.g. $5M budget, Q3 impact"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Urgency</label>
+                  <select 
+                    value={urgency}
+                    onChange={e => setUrgency(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700 outline-none"
+                  >
+                    <option value="low">Low - Routine</option>
+                    <option value="medium">Medium - Normal</option>
+                    <option value="high">High - Priority</option>
+                    <option value="critical">Critical - Immediate</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sensitivity</label>
+                  <select 
+                    value={sensitivityLevel}
+                    onChange={e => setSensitivityLevel(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700 outline-none"
+                  >
+                    <option value="public">Public / Unclassified</option>
+                    <option value="internal">Internal / Proprietary</option>
+                    <option value="confidential">Confidential / Restricted</option>
+                    <option value="secret">Secret / PII / PHI</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            <div className="relative">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Message SentinelOps AI for audit intelligence..."
+                rows={1}
+                className="w-full bg-slate-50 focus:bg-white border border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 rounded-2xl pl-4 pr-14 py-3.5 text-sm resize-none transition-all outline-none shadow-sm"
+              />
+
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || isTyping}
+                className="absolute right-2 bottom-2 w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white disabled:opacity-40 transition-opacity hover:bg-blue-700"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

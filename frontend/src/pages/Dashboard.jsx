@@ -12,6 +12,8 @@ import {
   Cpu,
   Loader2,
   Sparkles,
+  PieChart,
+  BarChart,
 } from 'lucide-react';
 import api from '../api/client.js';
 
@@ -146,30 +148,68 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Capabilities */}
-      <section>
-        <h2 className="text-lg font-bold text-slate-800 mb-4">Core Capabilities</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {FEATURES.map((f) => (
-            <div
-              key={f.title}
-              className={`bg-white border ${f.border} rounded-2xl p-6 hover:shadow-md transition-shadow duration-200 group relative overflow-hidden`}
-            >
-              <div className="flex items-start gap-4 relative z-10">
-                <div className={`w-10 h-10 rounded-xl ${f.bg} flex items-center justify-center flex-shrink-0`}>
-                  <f.icon className={`w-5 h-5 ${f.accent}`} />
+      {/* Analytics Charts */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Risk Distribution */}
+        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
+            <PieChart className="w-5 h-5 text-purple-600" />
+            <h2 className="text-[15px] font-bold text-slate-800">Risk Distribution</h2>
+          </div>
+          
+          <div className="space-y-4">
+            {overview?.riskDistribution?.length > 0 ? (
+              overview.riskDistribution.map(r => {
+                const colors = {
+                  critical: 'bg-rose-500',
+                  high: 'bg-orange-500',
+                  medium: 'bg-amber-500',
+                  low: 'bg-emerald-500'
+                };
+                const maxCount = Math.max(...overview.riskDistribution.map(x => x.count)) || 1;
+                const width = `${(r.count / maxCount) * 100}%`;
+                return (
+                  <div key={r.level} className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <span>{r.level} Risk</span>
+                      <span>{r.count} incidents</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${colors[r.level] || 'bg-blue-500'}`} style={{ width }} />
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-sm text-slate-500 italic text-center py-4">No risk data available.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Domain Breakdown */}
+        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
+            <BarChart className="w-5 h-5 text-blue-600" />
+            <h2 className="text-[15px] font-bold text-slate-800">Audit Domains</h2>
+          </div>
+          
+          <div className="space-y-4">
+            {overview?.domainBreakdown?.length > 0 ? (
+              overview.domainBreakdown.slice(0, 5).map(d => (
+                <div key={d.domain} className="flex items-center gap-4">
+                  <div className="w-32 truncate text-xs font-bold text-slate-600 uppercase tracking-wider">
+                    {d.domain.replace('_', ' ')}
+                  </div>
+                  <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${d.percentage}%` }} />
+                  </div>
+                  <div className="w-12 text-right text-xs font-bold text-slate-700">{d.percentage}%</div>
                 </div>
-                <div>
-                  <h3 className="text-[15px] font-bold text-slate-900 mb-1.5">
-                    {f.title}
-                  </h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">
-                    {f.desc}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
+              ))
+            ) : (
+              <p className="text-sm text-slate-500 italic text-center py-4">No domain data available.</p>
+            )}
+          </div>
         </div>
       </section>
 

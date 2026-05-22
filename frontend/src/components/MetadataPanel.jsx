@@ -164,12 +164,33 @@ export default function MetadataPanel({ interaction }) {
       </div>
 
       {/* Confidence & Risk Meters */}
-      <div className="space-y-4 pt-2">
+      <div className="space-y-4 pt-2 border-b border-slate-200 pb-4">
         {interaction.confidence_score !== undefined && (
           <ConfidenceMeter value={interaction.confidence_score} />
         )}
         {interaction.incident_risk !== undefined && (
           <RiskMeter value={interaction.incident_risk / 100} />
+        )}
+        {interaction.governance_severity && (
+          <div className="pt-2">
+            <div className="text-[10px] font-semibold text-slate-500 uppercase mb-2">Governance Severity</div>
+            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+              interaction.governance_severity === 'critical-block' ? 'bg-rose-100 text-rose-700' :
+              interaction.governance_severity === 'mandatory' ? 'bg-orange-100 text-orange-700' :
+              interaction.governance_severity === 'advisory' ? 'bg-amber-100 text-amber-700' :
+              'bg-slate-100 text-slate-600'
+            }`}>
+              {interaction.governance_severity}
+            </span>
+          </div>
+        )}
+        {interaction.escalation_required && (
+          <div className="pt-1">
+            <div className="flex items-center gap-1.5 text-rose-600 font-bold text-xs">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Escalation Required
+            </div>
+          </div>
         )}
       </div>
 
