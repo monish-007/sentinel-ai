@@ -266,10 +266,16 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="flex h-[calc(100vh-5rem)] md:h-[calc(100vh-4rem)] bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
       {/* LEFT SIDEBAR */}
+      {historyOpen && (
+        <div 
+          className="md:hidden absolute inset-0 bg-slate-900/20 z-20"
+          onClick={() => setHistoryOpen(false)}
+        />
+      )}
       <div
-        className={`transition-all duration-300 border-r border-slate-200 bg-slate-50 ${
+        className={`transition-all duration-300 border-r border-slate-200 bg-slate-50 md:relative absolute left-0 top-0 bottom-0 z-30 ${
           historyOpen ? 'w-64' : 'w-0'
         } overflow-hidden flex flex-col`}
       >
@@ -408,23 +414,25 @@ export default function Chat() {
 
             {/* Advanced Parameters Panel */}
             {paramsOpen && (
-              <div className="mb-4 p-4 rounded-xl border border-slate-200 bg-slate-50 grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-up">
+              <div className="mb-4 p-4 rounded-xl border border-slate-200 bg-slate-50 grid grid-cols-1 md:grid-cols-3 gap-5 animate-fade-up">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Financial Context</label>
+                  <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Financial Impact Context</label>
+                  <p className="text-[10px] text-slate-500 leading-snug mb-1">How much money is at risk? (e.g. "$50k monthly loss", "$2M budget")</p>
                   <input 
                     type="text" 
                     value={financialContext}
                     onChange={e => setFinancialContext(e.target.value)}
-                    placeholder="e.g. $5M budget, Q3 impact"
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700"
+                    placeholder="Enter financial context..."
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-700 placeholder-slate-400"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Urgency</label>
+                  <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Required Urgency</label>
+                  <p className="text-[10px] text-slate-500 leading-snug mb-1">How quickly does this need resolution?</p>
                   <select 
                     value={urgency}
                     onChange={e => setUrgency(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700 outline-none"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-700 outline-none"
                   >
                     <option value="low">Low - Routine</option>
                     <option value="medium">Medium - Normal</option>
@@ -433,16 +441,17 @@ export default function Chat() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sensitivity</label>
+                  <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Data Sensitivity</label>
+                  <p className="text-[10px] text-slate-500 leading-snug mb-1">What kind of data are we dealing with?</p>
                   <select 
                     value={sensitivityLevel}
                     onChange={e => setSensitivityLevel(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-700 outline-none"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-700 outline-none"
                   >
-                    <option value="public">Public / Unclassified</option>
-                    <option value="internal">Internal / Proprietary</option>
-                    <option value="confidential">Confidential / Restricted</option>
-                    <option value="secret">Secret / PII / PHI</option>
+                    <option value="public">Public - Safe to share globally</option>
+                    <option value="internal">Internal - Company staff only</option>
+                    <option value="confidential">Confidential - Leadership/NDAs only</option>
+                    <option value="secret">Secret - Strictly regulated (PII/PHI)</option>
                   </select>
                 </div>
               </div>
@@ -472,8 +481,14 @@ export default function Chat() {
       </div>
 
       {/* RIGHT SIDEBAR */}
+      {decisionOpen && (
+        <div 
+          className="md:hidden absolute inset-0 bg-slate-900/20 z-20"
+          onClick={() => setDecisionOpen(false)}
+        />
+      )}
       <div
-        className={`transition-all duration-300 border-l border-slate-200 bg-slate-50 ${
+        className={`transition-all duration-300 border-l border-slate-200 bg-slate-50 md:relative absolute right-0 top-0 bottom-0 z-30 ${
           decisionOpen ? 'w-80' : 'w-0'
         } overflow-hidden`}
       >

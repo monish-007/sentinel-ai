@@ -21,15 +21,24 @@ const navItems = [
   { to: '/memory', icon: Brain, label: 'Memory' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen, setMobileOpen }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <aside
-      className={`${
-        collapsed ? 'w-[68px]' : 'w-60'
-      } h-screen sticky top-0 flex flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out z-50`}
-    >
+    <>
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-slate-900/20 z-40"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+      <aside
+        className={`fixed md:sticky top-0 h-screen flex flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out z-50
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${collapsed ? 'md:w-[68px] w-64' : 'w-64'}
+        `}
+      >
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 py-5 border-b border-slate-200">
         <div className="relative flex-shrink-0">
@@ -115,5 +124,6 @@ export default function Sidebar() {
         </button>
       </div>
     </aside>
+    </>
   );
 }

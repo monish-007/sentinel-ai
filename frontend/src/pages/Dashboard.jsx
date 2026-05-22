@@ -86,11 +86,11 @@ export default function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-fade-up">
       {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm p-8 md:p-12">
+      <section className="relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm p-6 md:p-12">
         <div className="relative z-10 max-w-2xl">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-md">
-              <Shield className="w-7 h-7 text-white" />
+          <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-md flex-shrink-0">
+              <Shield className="w-6 h-6 md:w-7 md:h-7 text-white" />
             </div>
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
@@ -134,11 +134,11 @@ export default function Dashboard() {
               key={s.label}
               className="bg-white border border-slate-200 shadow-sm rounded-2xl px-5 py-5 flex items-center gap-4"
             >
-              <div className={`w-12 h-12 rounded-xl ${s.bg} flex items-center justify-center flex-shrink-0`}>
-                <s.icon className={`w-6 h-6 ${s.color}`} />
+              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl ${s.bg} flex items-center justify-center flex-shrink-0`}>
+                <s.icon className={`w-5 h-5 md:w-6 md:h-6 ${s.color}`} />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900 leading-tight">
+              <div className="min-w-0 flex-1">
+                <p className="text-xl md:text-2xl font-bold text-slate-900 leading-tight truncate">
                   {loading ? '—' : s.value}
                 </p>
                 <p className="text-[11px] font-semibold text-slate-500 uppercase mt-0.5">{s.label}</p>
@@ -181,7 +181,11 @@ export default function Dashboard() {
                 );
               })
             ) : (
-              <p className="text-sm text-slate-500 italic text-center py-4">No risk data available.</p>
+              <div className="flex flex-col items-center justify-center py-8 px-4 text-center bg-slate-50 rounded-xl border border-slate-100">
+                <PieChart className="w-8 h-8 text-slate-300 mb-2" />
+                <p className="text-sm font-medium text-slate-600">No risk data available.</p>
+                <p className="text-xs text-slate-400 mt-1">Submit audits to generate a risk profile.</p>
+              </div>
             )}
           </div>
         </div>
@@ -207,7 +211,11 @@ export default function Dashboard() {
                 </div>
               ))
             ) : (
-              <p className="text-sm text-slate-500 italic text-center py-4">No domain data available.</p>
+              <div className="flex flex-col items-center justify-center py-8 px-4 text-center bg-slate-50 rounded-xl border border-slate-100">
+                <BarChart className="w-8 h-8 text-slate-300 mb-2" />
+                <p className="text-sm font-medium text-slate-600">No domain data available.</p>
+                <p className="text-xs text-slate-400 mt-1">Audit categories will appear here.</p>
+              </div>
             )}
           </div>
         </div>
