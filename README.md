@@ -39,9 +39,10 @@ To solve the **lack of governance**, the platform includes an automated complian
 
 ### 4. Executive Decision Interface
 To solve the **poor executive UX**, the frontend acts as an Enterprise Decision Dashboard.
-- Designed in a crisp, high-contrast light mode tailored for professional environments.
-- Responses are forced into a strict JSON schema and rendered as beautiful **Decision Cards** detailing Risk Level, Confidence Scores, Tradeoffs, and Governance Concerns.
-- Fully centralized chat with collapsible history and metadata sidebars.
+- **Audit Parameters Module**: Users can declare `Financial Context` (e.g. $5M budget impact), `Urgency`, and `Sensitivity` before querying.
+- **Enterprise Decision Cards**: Responses are forced into a strict JSON schema and rendered as beautiful Decision Cards detailing Risk Level, Estimated Financial Impact, Escalation Warnings, and Operational Recommendations.
+- **Command Center Dashboard**: Visualizes millions of interactions via live `Risk Distribution` and `Audit Domains` analytics charts.
+- Fully centralized chat with collapsible history and metadata sidebars showcasing governance severity flags and token usage metrics.
 
 ---
 
